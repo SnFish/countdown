@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(countdown VERSION 0.1.0 LANGUAGES CXX RC)
+project(countdown VERSION 0.1.1 LANGUAGES CXX RC)
 if(NOT WIN32)
     message(FATAL_ERROR "Countdown requires Windows.")
 endif()

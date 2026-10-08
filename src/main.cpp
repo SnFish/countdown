@@ -375,7 +375,7 @@ class App {
         SelectObject(surface_.maskDc(), oldFont);
         const int textOpacity = config_.textAlpha * opacity / 100;
         surface_.composite(config_.color,
-                           state == countdown::State::Paused ? textOpacity * 70 / 100 : textOpacity);
+                           state == countdown::State::Running ? textOpacity : textOpacity * 70 / 100);
 
         if (hoverUnit_ && !locked_) {
             const auto layout = timeLayout(seconds);
@@ -447,19 +447,20 @@ class App {
         draw();
     }
     void toggle() {
+        stopAudio();
         timer_.toggle(now());
-        if (timer_.state() != countdown::State::Running) stopAudio();
         refreshTimer();
     }
     void reset() { stopAudio(); timer_.reset(config_.seconds); refreshTimer(); }
     void tick() {
         const auto stamp = now();
         const bool finished = timer_.update(stamp);
+        if (finished) timer_.reset(timer_.preset());
         const int seconds = timer_.seconds(stamp);
         if (finished) {
             KillTimer(window_, tickId);
             if (!config_.voice || !speech_.say(L"时间到", config_.volume)) MessageBeep(MB_OK);
-        } else if (seconds != lastSecond_ && config_.voice && seconds > 0 && seconds <= config_.voiceSeconds) {
+        } else if (timer_.state() == countdown::State::Running && seconds != lastSecond_ && config_.voice && seconds > 0 && seconds <= config_.voiceSeconds) {
             wchar_t text[16]{};
             swprintf_s(text, L"%d", seconds);
             speech_.say(text, config_.volume);
@@ -630,7 +631,7 @@ class App {
             else { ShowWindow(window_, SW_SHOWNOACTIVATE); draw(); }
             break;
         case Help:
-            MessageBoxW(window_, L"单击时间：开始 / 暂停\n双击时间：复位\n指向时、分或秒滚动：增减对应单位\n可调时长的最小、最大值在设置中指定\n拖动：移动窗口\n锁定 / 解锁按钮：防止误触\n右键或托盘右键：设置、锁定、隐藏、退出\n锁定时禁止启动、复位、调时和拖动\n\nCtrl+Alt+Space：开始 / 暂停\nCtrl+Alt+R：复位\nCtrl+Alt+L：锁定 / 解锁\nCtrl+Alt+X：退出\n\n到时保持数字颜色并播放系统提示音。\n语音倒数可在设置中启用。", L"倒计时 · 操作说明", MB_OK);
+            MessageBoxW(window_, L"单击时间：开始 / 暂停\n双击时间：复位\n指向时、分或秒滚动：增减对应单位\n可调时长的最小、最大值在设置中指定\n拖动：移动窗口\n锁定 / 解锁按钮：防止误触\n右键或托盘右键：设置、锁定、隐藏、退出\n锁定时禁止启动、复位、调时和拖动\n\nCtrl+Alt+Space：开始 / 暂停\nCtrl+Alt+R：复位\nCtrl+Alt+L：锁定 / 解锁\nCtrl+Alt+X：退出\n\n到时自动复位，数字恢复待机亮度。\n语音倒数可在设置中启用。", L"倒计时 · 操作说明", MB_OK);
             break;
         case Quit: DestroyWindow(window_); break;
         }
